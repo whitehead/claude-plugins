@@ -48,7 +48,19 @@ This removes the marketplace and uninstalls its plugins.
 
 ## Contributing
 
-We welcome contributions from anyone at Whitehead. If you have a skill, workflow, or tool configuration that would be useful to others, package it as a plugin and open a PR.
+We welcome contributions from anyone at Whitehead. This marketplace is for **shared tools that are broadly useful across the institute.** If a plugin is only useful to your personal workflow, keep it in your personal `~/.claude/skills/` directory instead. A good test: "Would someone outside my lab find this useful?"
+
+### Naming
+
+Plugin names describe **what they do**, not where they came from. No lab prefixes, team prefixes, or usernames in plugin names.
+
+| Good | Bad |
+|------|-----|
+| `rnaseq-qc` | `young-lab-rnaseq-qc` |
+| `demux-pipeline` | `core-demux` |
+| `fastq-quality-check` | `jdoe-qc-helper` |
+
+Author attribution belongs in `plugin.json` using the `author` field, not in the name.
 
 ### Plugin structure
 

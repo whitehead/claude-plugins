@@ -14,13 +14,29 @@ This repository is public on GitHub. Never include:
 
 Use environment variables or clearly marked placeholders (`YOUR_USERNAME`, `your-server.example.com`) for any user-specific or environment-specific values.
 
+## What Belongs Here
+
+This marketplace is for **shared tools that are useful to others across the institute.** If a plugin is only useful to you or your specific workflow, keep it in your personal `~/.claude/skills/` directory instead.
+
+Before adding a plugin, ask: "Would someone outside my lab find this useful?" If yes, contribute it here. If no, it belongs in your personal skills.
+
 ## Naming Conventions
 
-- **Plugin directories**: lowercase, hyphenated. e.g., `plugins/code-review/`
-- **Skill directories**: lowercase, hyphenated. Match the skill name. e.g., `skills/code-review/`
+- **Names describe function, not origin.** `rnaseq-qc` not `young-lab-rnaseq-qc`. `demux-pipeline` not `core-demux`. Do not prefix plugin names with lab names, team names, or usernames.
+- **Plugin directories**: lowercase, hyphenated. e.g., `plugins/rnaseq-qc/`
+- **Skill directories**: lowercase, hyphenated. Match the skill name. e.g., `skills/rnaseq-qc/`
 - **Plugin names in `plugin.json` and `marketplace.json`**: must match the plugin directory name exactly
 - **Skill names in `SKILL.md` frontmatter**: must match the skill directory name exactly
-- Names should be descriptive and specific: `rails-test-runner` not `test-helper`, `api-doc-generator` not `docs`
+- Names should be descriptive and specific: `fastq-quality-check` not `qc-helper`, `api-doc-generator` not `docs`
+- **Author attribution goes in `plugin.json`**, not in the name or directory structure. Use the `author` field:
+  ```json
+  {
+    "name": "rnaseq-qc",
+    "description": "RNA-seq quality control checks",
+    "version": "1.0.0",
+    "author": { "name": "Genome Technology Core" }
+  }
+  ```
 
 ## Adding a Plugin
 
