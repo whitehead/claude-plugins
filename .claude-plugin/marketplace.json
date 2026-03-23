@@ -1,0 +1,12 @@
+{
+  "name": "whitehead",
+  "owner": {
+    "name": "Whitehead Institute"
+  },
+  "metadata": {
+    "description": "Claude Code plugins for Whitehead Institute",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": []
+}
