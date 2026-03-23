@@ -8,5 +8,11 @@
     "version": "1.0.0",
     "pluginRoot": "./plugins"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "slurm-snakemake",
+      "source": "slurm-snakemake",
+      "description": "Snakemake workflow development with Slurm executor for HPC clusters"
+    }
+  ]
 }

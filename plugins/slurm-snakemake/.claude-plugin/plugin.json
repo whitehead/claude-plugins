@@ -1,0 +1,6 @@
+{
+  "name": "slurm-snakemake",
+  "description": "Snakemake workflow development with Slurm executor for HPC clusters",
+  "version": "1.0.0",
+  "author": { "name": "Scientific Computing" }
+}
