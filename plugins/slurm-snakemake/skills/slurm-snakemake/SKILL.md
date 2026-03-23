@@ -32,7 +32,7 @@ snakemake --executor slurm --jobs 100 --until all_preprocess
 snakemake --executor slurm --rerun-incomplete
 ```
 
-**Run Snakemake on the head node inside tmux** — the scheduler process must stay alive to monitor jobs:
+**Run Snakemake on the head node inside tmux** — the scheduler process must stay alive to monitor jobs and clean up `temp()` files:
 ```bash
 tmux new-session -s pipeline
 snakemake --profile slurm/ 2>&1 | tee logs/run-$(date +%Y%m%d_%H%M%S).log
@@ -57,7 +57,6 @@ default-resources:
     slurm_partition: YOUR_PARTITION
     slurm_account: YOUR_ACCOUNT
     mem_mb: 4000
-    runtime: 60        # minutes
 
 # Per-rule resource overrides
 set-threads:
@@ -67,10 +66,8 @@ set-threads:
 set-resources:
     align:
         mem_mb: 32000
-        runtime: 240
     heavy_merge:
         mem_mb: 500000
-        runtime: 720
         slurm_partition: highmem
 
 # What's on shared filesystem (most HPC setups: everything)
@@ -80,6 +77,37 @@ shared-fs-usage:
     - sources
     - source-cache
 ```
+
+> **Caveat: `runtime` in profiles.** Setting `runtime` via `default-resources` or `set-resources` in the profile may not propagate to Slurm's `--time` flag (verified on Snakemake 9.x / executor plugin 2.5.x — all jobs received the 1-minute default regardless of profile values). **Set `runtime` directly in rule `resources:` blocks** where it reliably maps to `--time`. `mem_mb` and `set-threads` work correctly from profiles.
+
+### Automatic Partition Selection
+
+On clusters with numeric partition names (e.g., `20`, `24`), prefer automatic partition selection over setting `slurm_partition` directly. This avoids a known bug where numeric partition names are summed in group jobs (see [Grouping Jobs](#grouping-jobs)).
+
+```yaml
+# partitions.yaml — define available partitions and their limits
+partitions:
+  "20":
+    max_runtime: "21-00:00:00"
+    max_mem_mb: 245760
+    max_cpus_per_task: 32
+    max_nodes: 1
+  "24":
+    max_runtime: "21-00:00:00"
+    max_mem_mb: 245760
+    max_cpus_per_task: 48
+    max_nodes: 1
+```
+
+```yaml
+# slurm/config.yaml — point to partition config instead of setting slurm_partition
+executor: slurm
+slurm-partition-config: partitions.yaml
+default-resources:
+    mem_mb: 4000
+```
+
+The plugin selects the best-fit partition based on each job's resource requirements. See the [Slurm executor plugin docs](https://snakemake.github.io/snakemake-plugin-catalog/plugins/executor/slurm.html#automatic-partition-selection) for details.
 
 **Usage:**
 ```bash
@@ -198,6 +226,68 @@ rule align:
 
 ---
 
+## Intermediate File Cleanup
+
+### `temp()` — Automatic Deletion
+
+Mark intermediate files with `temp()` so Snakemake deletes them once all downstream consumers finish. Critical on shared HPC storage where intermediate files (unsorted BAMs, raw extracts) can consume terabytes.
+
+```python
+rule align:
+    output: temp("intermediates/{sample}.unsorted.bam")
+    shell: "bwa mem ... | samtools view -b > {output}"
+
+rule sort:
+    input: "intermediates/{sample}.unsorted.bam"
+    output: "results/{sample}.sorted.bam"
+    shell: "samtools sort {input} -o {output}"
+# After sort completes, Snakemake deletes the unsorted BAM automatically
+```
+
+Deletion is performed by the **Snakemake scheduler on the head node**, not by the Slurm job itself. If the scheduler process dies (e.g., tmux session lost), cleanup stops and temp files remain. This is why running in tmux is critical — not just for job monitoring, but for cleanup.
+
+Use `--notemp` to keep all temp files for debugging. Use `--delete-temp-output` to retroactively delete temp-marked files from a completed run.
+
+### `protected()` — Write-Protect Expensive Outputs
+
+Mark outputs that are expensive to reproduce. Snakemake sets them read-only (chmod 444) after creation, preventing accidental overwrite from `--forceall` or re-runs.
+
+```python
+rule expensive_alignment:
+    output: protected("results/{sample}.final.bam")
+    shell: "..."
+```
+
+---
+
+## Shadow Rules
+
+Run rules in isolated temporary directories to contain undeclared temp files. The shadow directory is created under `.snakemake/shadow/`, inputs are symlinked in, the rule executes there, declared outputs are moved back, and the shadow directory is deleted.
+
+```python
+rule messy_tool:
+    input: "data/{sample}.fastq"
+    output: "results/{sample}.counts.txt"
+    shadow: "minimal"
+    shell:
+        """
+        # This tool dumps temp files everywhere — shadow contains the mess
+        run_messy_tool --input {input} --tmp-prefix tmp_
+        mv tmp_counts.txt {output}
+        """
+```
+
+| Shadow mode | What's available in shadow dir | Use case |
+|---|---|---|
+| `"minimal"` | Only symlinks to declared inputs | Cleanest isolation |
+| `"shallow"` | Symlinks to all top-level files/dirs | Tool needs config files, scripts |
+| `"full"` | Recursive symlinks of entire project tree | Tool navigates relative paths |
+| `"copy-minimal"` | Copies (not symlinks) of inputs | Tool modifies inputs in-place |
+
+Shadow directories are created on the filesystem where `.snakemake/` lives. On HPC clusters, this is typically shared NFS, so shadow works across Slurm nodes without extra configuration. If `.snakemake/` is on node-local storage, use `--shadow-prefix` to point to shared storage.
+
+---
+
 ## localrules
 
 Mark lightweight rules that should run on the head node, not as Slurm jobs:
@@ -245,6 +335,8 @@ snakemake --groups extract_info=preprocess filter_reads=preprocess \
 
 `--group-components preprocess=10` packs up to 10 instances of the group into one Slurm job.
 
+> **Warning: Numeric partition names break group jobs.** Snakemake's group resource calculator sums `slurm_partition` values across grouped rules when the partition name is numeric (e.g., 5 rules with partition `20` → sbatch gets `-p 100`). This is a known upstream bug. **Workaround:** Use automatic partition selection via `slurm-partition-config: partitions.yaml` instead of setting `slurm_partition` directly. See [Automatic Partition Selection](#automatic-partition-selection).
+
 ---
 
 ## NFS / Shared Filesystem
@@ -286,6 +378,7 @@ seff JOBID
 | `CANCELLED` | Preemption or manual cancel | Use `--slurm-requeue` for auto-requeue |
 | Job stuck in `PENDING` | Partition full or resource request too large | Check `sinfo`, reduce resources or try different partition |
 | `sbatch: error: Batch job submission failed` | Account/partition misconfigured | Verify `slurm_account` and `slurm_partition` in profile |
+| `sbatch: error: invalid partition` (group jobs only) | Numeric partition name summed | Use `slurm-partition-config` instead of `slurm_partition` |
 
 ### Find Slurm log files
 
@@ -451,11 +544,15 @@ sacct --me -S today --format=JobID,JobName,State,MaxRSS,Elapsed,Timelimit,ExitCo
 - **Set both `mem_mb` and `mem_mb_per_cpu`** — mutually exclusive Slurm flags
 - **Skip `latency-wait` on shared filesystems** — NFS delays cause false "missing output" errors
 - **Use legacy `--cluster` or `--cluster-config`** — deprecated in Snakemake 8
+- **Set numeric `slurm_partition` with group jobs** — values get summed; use `slurm-partition-config` instead
+- **Rely on `runtime` in profile `default-resources`** — it may not propagate; set `runtime` in rule `resources:` blocks
 
 ### Always
 
 - **Use `localrules`** for lightweight tasks (targets, downloads, plotting)
 - **Use `--keep-going`** so one failed job doesn't block independent branches
 - **Use `attempt`-scaled resources** with `--retries` for memory-hungry rules
-- **Run in tmux/screen** — the scheduler must stay alive for the duration
+- **Run in tmux/screen** — the scheduler must stay alive for the duration and for `temp()` cleanup
 - **Log your runs** — pipe to `tee` with timestamps for debugging later
+- **Use `temp()`** on intermediate files to avoid filling shared storage
+- **Use `protected()`** on expensive-to-reproduce outputs to prevent accidental overwrite
