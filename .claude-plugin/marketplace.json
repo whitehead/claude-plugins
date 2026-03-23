@@ -5,13 +5,12 @@
   },
   "metadata": {
     "description": "Claude Code plugins for Whitehead Institute",
-    "version": "1.0.0",
-    "pluginRoot": "./plugins"
+    "version": "1.0.0"
   },
   "plugins": [
     {
       "name": "session-self-assess",
-      "source": "session-self-assess",
+      "source": "./plugins/session-self-assess",
       "description": "Audit a Claude Code session for errors, inefficiencies, and repeated workarounds. Produces prioritized action items to improve skills, scripts, and instructions."
     }
   ]
