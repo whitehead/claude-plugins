@@ -1,5 +1,0 @@
-{
-  "name": "session-self-assess",
-  "description": "Audit a Claude Code session for errors, inefficiencies, and repeated workarounds. Produces prioritized action items to improve skills, scripts, instructions, and tooling for future sessions.",
-  "version": "1.0.0"
-}

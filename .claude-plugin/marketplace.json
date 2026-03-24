@@ -10,8 +10,12 @@
   "plugins": [
     {
       "name": "session-self-assess",
-      "source": "./plugins/session-self-assess",
-      "description": "Audit a Claude Code session for errors, inefficiencies, and repeated workarounds. Produces prioritized action items to improve skills, scripts, and instructions."
+      "source": "./",
+      "description": "Audit a Claude Code session for errors, inefficiencies, and repeated workarounds. Produces prioritized action items to improve skills, scripts, and instructions.",
+      "strict": false,
+      "skills": [
+        "./plugins/session-self-assess/skills/self-assess"
+      ]
     }
   ]
 }
