@@ -9,12 +9,12 @@
   },
   "plugins": [
     {
-      "name": "self-assess",
+      "name": "session-tools",
       "source": "./",
-      "description": "Audit a Claude Code session for errors, inefficiencies, and repeated workarounds. Produces prioritized action items to improve skills, scripts, and instructions.",
+      "description": "Session productivity tools for Claude Code. Includes self-assess for auditing sessions for errors, inefficiencies, and repeated workarounds.",
       "strict": false,
       "skills": [
-        "./plugins/self-assess/skills/self-assess"
+        "./plugins/session-tools/skills/self-assess"
       ]
     }
   ]
