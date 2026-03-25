@@ -1,0 +1,6 @@
+{
+  "name": "hpc-project",
+  "description": "Make Python projects reproducible, shareable, and HPC-ready following the Whitehead pattern: conda+uv install, YAML configs, CLI entry points, SLURM scripts, and smoke tests.",
+  "version": "0.2.0",
+  "author": { "name": "Cheeseman Lab" }
+}
