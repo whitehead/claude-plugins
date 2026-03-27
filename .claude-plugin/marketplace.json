@@ -12,6 +12,8 @@
       "name": "fry-python-tool",
       "source": "fry-python-tool",
       "description": "Find and use GPU-powered comp bio tools on the Whitehead fry cluster, or scaffold a new one."
+    },
+    {
       "name": "session-tools",
       "source": "./plugins/session-tools",
       "description": "Session productivity tools for Claude Code. Includes self-assess for auditing sessions for errors, inefficiencies, and repeated workarounds."
