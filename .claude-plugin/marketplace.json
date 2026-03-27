@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "fry-python-tool",
-      "source": "fry-python-tool",
+      "source": "./plugins/fry-python-tool",
       "description": "Find and use GPU-powered comp bio tools on the Whitehead fry cluster, or scaffold a new one."
     },
     {
