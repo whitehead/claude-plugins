@@ -10,9 +10,9 @@
   },
   "plugins": [
     {
-      "name": "hpc-project",
-      "source": "hpc-project",
-      "description": "Make Python projects reproducible, shareable, and HPC-ready: conda+uv install, YAML configs, CLI entry points, SLURM scripts, and smoke tests."
+      "name": "fry-python-tool",
+      "source": "fry-python-tool",
+      "description": "Find and use GPU-powered comp bio tools on the Whitehead fry cluster, or scaffold a new one."
     }
   ]
 }
