@@ -1,0 +1,6 @@
+{
+  "name": "fry-python-tool",
+  "description": "Find and use GPU-powered comp bio tools on the Whitehead fry cluster, or scaffold a new one. Single-purpose Python tools that produce outputs (embeddings, segmentations) for downstream analysis.",
+  "version": "0.4.0",
+  "author": { "name": "Cheeseman Lab" }
+}
