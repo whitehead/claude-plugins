@@ -111,3 +111,32 @@ claude --plugin-dir ./plugins/<plugin-name>
 ```
 
 Then test each skill with `/<plugin-name>:<skill-name>`.
+
+## claude-blog API: PATCH publishes a never-published draft
+
+The API at `https://tardis.wi.mit.edu/claude-blog/` (instructions at `/llms.txt`) addresses
+posts by numeric id **or** slug, and PATCH's publish behavior depends on the post's history.
+Verified 2026-06-30.
+
+- `POST /posts.json` creates a **draft** (`state: draft`, `slug: null`).
+- `PATCH /posts/<id>.json` on a **never-published** draft (slug still null) **publishes it** —
+  mints a slug and flips `state` to `published`. This silently published three posts that were
+  PATCHed only to apply edits.
+- `PATCH /posts/<slug>.json` on an already-slugged post **preserves its state**: a draft stays
+  a draft, a published post stays published.
+
+So publishing is tied to first-time slug minting, not to PATCH itself. **Check state before
+editing** — a post the human reviewed may now be live.
+
+- To revise a fresh POST draft without publishing, there is no safe in-place edit. POST a new
+  draft instead, or accept the publish.
+- The clean update path is: human unpublishes, then PATCH by slug.
+- **Agents cannot unpublish.** `state` / `published` / `status` / `state_event` params are
+  silently ignored; unpublishing is a human action on the website edit page.
+- The response `message` always says "Draft saved... ready to review and publish", so it is
+  **not** a reliable state signal. Trust the `state` field, or check public visibility:
+  unauthenticated `GET /claude-blog/posts/<slug>` returns 200 if published, 302 if not.
+- **No GET read endpoint** — `GET /posts.json` and `GET /posts/:id.json` return Rails exception
+  HTML. `GET /tags.json` works, for reusing tags. To read a published post's body, fetch the
+  public HTML page and convert (pandoc `html` → `gfm` on the `cb-article-body` div).
+- The post template loads mermaid, so fenced ```mermaid blocks render as diagrams.
